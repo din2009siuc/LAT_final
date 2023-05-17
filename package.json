@@ -19,6 +19,7 @@
   "dependencies": {
     "@azure/ai-form-recognizer": "^4.0.0",
     "@azure/identity": "^3.2.2",
-    "config": "^3.3.9"
+    "config": "^3.3.9",
+    "fs": "^0.0.1-security"
   }
 }
