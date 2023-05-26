@@ -14,13 +14,17 @@ const configLine = {
 };
 // Azure Form Recognizer config
 const endpoint = configGet.get("ENDPOINT");
-const apiKey = configGet.get("FORM_RECOGINIZER_API_KEY");
+const apiKey = configGet.get("FORM_RECOGNIZER_API_KEY");
 
 const client = new line.Client(configLine);
 
 const app = express();
 const port = process.env.PORT || process.env.port || 3001;
 
+const fileFolder = 'saved_images/';
+fs.mkdir(fileFolder, {recursive: true}, (err) => {
+	if ( err ) throw err;
+});
 
 // Set up the route to handle LINE messages
 app.post('/callback', line.middleware(configLine), (req, res) => {
@@ -60,22 +64,24 @@ async function performFormRecognition(filePath) {
     let lineResult = "";
     // toJSON
     let output = {};
-    const outputFilePathJSON = `output.json`;
+
+	const outputFilePathJSON = 'output.json';
 
     try {
         // 讀取現有的 output.json 內容
-        const existingData = fs.readFileSync(outputFilePathJSON, 'utf8');
-        if (existingData) {
-            output = JSON.parse(existingData);
-        } else {
-            output = {
-                pages: []
-            };
-        }
-    } catch (err) {
-        console.log(`Error reading existing data from ${outputFilePathJSON}:`, err);
-    }
-
+        const existingData = fs.readFileSync(outputFilePathJSON, 'utf8')
+		if (existingData) {
+			output = JSON.parse(existingData);
+		} else {
+			output = {
+				pages: []
+			};
+		}
+    } catch ({name, msg}) {
+		fs.closeSync(fs.openSync(outputFilePathJSON, 'w'));
+		// console.log(`Error reading existing data from ${outputFilePathJSON}:`, msg);
+	}
+	
     if (pages.length <= 0) {
         console.log("No pages were extracted from the document.");
     } else {
@@ -107,7 +113,7 @@ async function performFormRecognition(filePath) {
                     height: page.height,
                     angle: page.angle,
                     // lines: lines
-                    lines: lineResult
+                    content: lineResult
                 });
 
             }
@@ -125,7 +131,7 @@ async function performFormRecognition(filePath) {
 async function handleEvent(event) {
     if (event.message.type === 'image') {
         const messageContent = await client.getMessageContent(event.message.id);
-        const filePath = `saved_images/${event.message.id}.jpg`;
+        const filePath = `${fileFolder}${event.message.id}.jpg`;
 
         // 儲存圖片到本地
         const writableStream = fs.createWriteStream(filePath);
