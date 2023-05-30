@@ -3,9 +3,10 @@
 
 const line = require('@line/bot-sdk'),
     express = require('express'),
-    configGet = require('config');
-const fs = require('fs');
-const { AzureKeyCredential, DocumentAnalysisClient } = require("@azure/ai-form-recognizer");
+    configGet = require('config'),
+	fs = require('fs'),
+	{ AzureKeyCredential, DocumentAnalysisClient } = require("@azure/ai-form-recognizer"),
+	{ exec } = require('child_process');
 
 // Line config
 const configLine = {
@@ -25,6 +26,8 @@ const fileFolder = 'saved_images/';
 fs.mkdir(fileFolder, {recursive: true}, (err) => {
 	if ( err ) throw err;
 });
+
+const outputFilePathJSON = 'output.json';
 
 // Set up the route to handle LINE messages
 app.post('/callback', line.middleware(configLine), (req, res) => {
@@ -65,20 +68,17 @@ async function performFormRecognition(filePath) {
     // toJSON
     let output = {};
 
-	const outputFilePathJSON = 'output.json';
-
     try {
         // 讀取現有的 output.json 內容
         const existingData = fs.readFileSync(outputFilePathJSON, 'utf8')
 		if (existingData) {
 			output = JSON.parse(existingData);
 		} else {
-			output = {
-				pages: []
-			};
+			output = { pages: [] };
 		}
     } catch ({name, msg}) {
 		fs.closeSync(fs.openSync(outputFilePathJSON, 'w'));
+		output = { pages:[] };
 		// console.log(`Error reading existing data from ${outputFilePathJSON}:`, msg);
 	}
 	
@@ -122,8 +122,11 @@ async function performFormRecognition(filePath) {
         // const outputFilePath = `output.txt`;
         // await writeToFile(lineResult, outputFilePath);
         // toJSON
+		return output;
+		/*
         await writeToFile(JSON.stringify(output), outputFilePathJSON);
         console.log("File has been written successfully.");
+		*/
     }
 }
 
@@ -142,20 +145,38 @@ async function handleEvent(event) {
         });
 
         // client.replyMessage只能回傳一次訊息
+		/*
         const replyMessage = { type: 'text', text: '圖片已儲存' };
-        client.replyMessage(event.replyToken, replyMessage);
+       	client.replyMessage(event.replyToken, replyMessage);
+		*/
 
         // 圖片轉文字
-        performFormRecognition(filePath);
+        performFormRecognition(filePath)
+		.then( (outputJSON) => {
+			writeToFile(JSON.stringify(outputJSON), outputFilePathJSON);
+			console.log("File has been written successfully.");
+
+			exec('python3 compare.py', (error, stdout, stderr) => {
+				if ( error ) {
+					console.error(`error: ${error}`);
+					return;
+				}
+				const testMsg = { type: 'text', text: stdout };
+				client.replyMessage(event.replyToken, testMsg);
+			});
+		});
+
     } else if (event.message.type === 'text') {
         // 回傳output.json的內容
+		/*
         const outputFilePathJSON = `output.json`;
         const jsonData = fs.readFileSync(outputFilePathJSON, 'utf8');
         const output = JSON.parse(jsonData);
 
         const lines = output.pages[0].lines;
+		*/
 
-        const replyMessage = { type: 'text', text: lines };
+        const replyMessage = { type: 'text', text: 'HELLO' };
         client.replyMessage(event.replyToken, replyMessage);
     }
 }
