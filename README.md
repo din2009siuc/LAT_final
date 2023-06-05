@@ -12,7 +12,7 @@ Line bot 已部署至 webapp，可自行測試使用（由於資料庫是共用�
 Line ID: @002vpbzv
 
 ## 使用技術
-Azure webapp
+Azure webapp \
 Node.js \
 Azure Form Recognizer \
 Line bot \
