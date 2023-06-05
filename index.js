@@ -274,7 +274,7 @@ async function handleEvent(event) {
 					const res = compareResults[i];
 					replyMsg.push({
 						type: 'text',
-						text: `此文檔：\n${res.newS}\n${res.pastName}：\n-\n${res.pastS}\n-\n相似度：${res.rat}`
+						text: `此文檔：\n${res.newS}\n-\n${res.pastName}：\n${res.pastS}\n-\n相似度：${res.rat}`
 					});
 				}
 			}
